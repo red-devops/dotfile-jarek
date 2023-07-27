@@ -1,0 +1,99 @@
+---
+
+- name: Setup dotfile
+  hosts: all
+  become: yes
+  tasks:
+
+  - name: Install Packages
+    apt:
+      name: "{{ apt_packages }}"
+      state: present
+    tags:
+      - apt
+
+  - name: Create Dirs in Home
+    file:
+      state: directory
+      path: "{{ home_dir }}/{{ item }}"
+      owner: "{{ user_name }}"
+      group: "{{ user_name }}"
+    with_items:
+      - bin
+
+  - name: HashiCorp Tools
+    unarchive:
+      src: "{{ item }}"
+      dest: "{{ home_dir }}/bin"
+      remote_src: yes
+      owner: "{{ user_name }}"
+      group: "{{ user_name }}"
+    with_items:
+      - "https://releases.hashicorp.com/packer/1.9.2/packer_1.9.2_linux_amd64.zip"
+      - "https://releases.hashicorp.com/terraform/1.5.4/terraform_1.5.4_linux_amd64.zip"
+      - "https://releases.hashicorp.com/vault/1.14.1/vault_1.14.1_linux_amd64.zip"
+      - "https://releases.hashicorp.com/consul/1.16.0/consul_1.16.0_linux_amd64.zip"
+      - "https://releases.hashicorp.com/nomad/1.6.0/nomad_1.6.0_linux_amd64.zip"
+    tags:
+      - hashi
+  
+  - name: Other Tools
+    unarchive:
+      src: "{{ item }}"
+      dest: "{{ home_dir }}/bin"
+      remote_src: yes
+      owner: "{{ user_name }}"
+      group: "{{ user_name }}"
+    with_items:
+      - "https://github.com/junegunn/fzf/releases/download/0.40.0/fzf-0.40.0-linux_amd64.tar.gz"
+    tags:
+      - other
+
+  - name: GitHub checkout oh-my-zsh
+    become: no
+    git:
+      repo: "https://github.com/robbyrussell/oh-my-zsh.git"
+      dest: "{{ home_dir }}/.oh-my-zsh"
+    tags:
+    - zsh
+
+  - name: GitHub checkout fzf
+    become: no
+    git:
+      repo: "https://github.com/junegunn/fzf.git"
+      dest: "{{ home_dir }}/.fzf-base"
+    tags:
+    - zsh
+  
+  - name: Link fzf in fzf-base
+    become: no
+    file:
+      dest: "{{ home_dir }}/.fzf-base/shell/fzf"
+      src: "{{ home_dir }}/bin/fzf"
+      state: link
+      owner: "{{ user_name }}"
+      group: "{{ user_name }}"
+    tags:
+    - zsh
+  
+  - name: Copy zshrc
+    template:
+      src: files/zshrc
+      dest: "{{ home_dir }}/.zshrc"
+      owner: "{{ user_name }}"
+      group: "{{ user_name }}"
+    tags:
+    - zsh
+  
+  - name: Copy gitconfig
+    copy:
+      src: gitconfig
+      dest: "{{ home_dir }}/.gitconfig"
+      owner: "{{ user_name }}"
+      group: "{{ user_name }}"
+  
+  - name: Change Shell to zsh
+    user:
+      name: "{{ user_name }}"
+      shell: /bin/zsh
+      

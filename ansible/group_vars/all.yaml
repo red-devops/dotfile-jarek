@@ -1,0 +1,7 @@
+apt_packages:
+  - zsh
+  - jq
+  - awscli
+  - unzip
+user_name: jarek
+home_dir: "/home/{{ user_name }}"
